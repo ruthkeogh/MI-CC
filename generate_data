@@ -1,0 +1,173 @@
+
+# ------------------------------
+# Set the seed
+
+set.seed(123493)
+
+# ------------------------------
+# ------------------------------
+# GENERATE FULL-COHORT DATA
+# ------------------------------
+# ------------------------------
+
+# ------------------------------
+# Set parameter values, etc
+
+n=15000      # cohort size
+
+
+drop.rate=0.0155 # Drop-out rate 
+lambda=0.00015    # Weibull baseline scale for event of interest
+kappa=2       # Weibull baseline shape for event of interest
+
+close.time=15  # Maximum follow-up time
+
+beta.x1=0.7     # log hazard ratio for X1
+beta.x2=0.7     # log hazard ratio for X2
+beta.z=0.7      # log hazard ratio for Z
+
+n.subco=750  #number in the subcohort
+
+# ------------------------------
+# Generate id numbers
+
+id=seq(1,n)
+
+# ------------------------------
+# Generate covariates 
+
+z=rbinom(n,1,0.5)
+
+x2=rbinom(n,1,exp(0.5*z)/(1+exp(0.5*z)))
+
+x1=rnorm(n,0.25*x2+0.25*z,1)      
+
+# ------------------------------
+# Generate potential event times
+
+u=runif(n,0,1)
+t.event=(-log(u)*(1/lambda)*exp(-(beta.x1*x1+beta.x2*x2+beta.z*z)))^(1/kappa)
+
+# ------------------------------
+# Generate potential drop-out time
+
+t.drop=rexp(n,drop.rate)
+
+# ------------------------------
+# Generate time for event or drop out
+t=pmin(t.event,t.drop,close.time)
+cause=1*(t==t.event)+2*(t==t.drop)+3*(t==close.time) 
+# 1: event, 2: drop out, 3: administrative censoring
+
+d=ifelse(cause==1,1,0) 
+
+# ------------------------------
+# the full-cohort data with no missingness
+
+cohort=data.frame(id,t,d,x1,x2,z)
+
+# ------------------------------
+#introduce missing data in x2 in the full cohort ("missing by chance")
+
+c0=-0.1
+c1=0.2
+c2=0.2
+c3=0.2
+x2miss.samp=rbinom(n,1,exp(c0+c1*z+c2*d+c3*z*d)/(1+exp(c0+c1*z+c2*d+c3*z*d)))
+
+cohort$x2=ifelse(x2miss.samp==1,NA,x2)
+
+# ------------------------------
+# ------------------------------
+# GENERATE CASE-COHORT DATA
+# ------------------------------
+# ------------------------------
+
+cohort.caco=cohort
+
+# ------------------------------
+# Generate subcohort
+
+n.subco=750 #number in the subcohort
+cohort.caco$subco<-c(rep(1,n.subco),rep(0,n-n.subco))
+
+# ------------------------------
+# Generate indicator of being in the case-cohort sample
+cohort.caco$in.caco<-ifelse(cohort.caco$d==1|cohort.caco$subco==1,1,0)
+
+# ------------------------------
+#make x1 missing in those outside the case-cohort sample
+
+cohort.caco$x1<-ifelse(cohort.caco$subco==1|cohort.caco$d==1,cohort.caco$x1,NA)
+
+# ------------------------------
+# Generate data-set which is just the case-cohort substudy
+
+caco=cohort.caco[cohort.caco$subco==1|cohort.caco$d==1,]
+
+#set entry time to just before t for cases outside the subcohort
+
+caco$origin=0
+
+caco$entertime=ifelse(caco$d==1 & caco$subco==0,caco$t-0.001,0)
+
+cohort.caco$entertime=ifelse(cohort.caco$d==1 & cohort.caco$subco==0,cohort.caco$t-0.001,0) #this is used in the intermediate MI method
+
+# ------------------------------
+# save case-cohort data
+
+save(cohort.caco,file="cohort_caco.RData") #case-cohort within full cohort
+write.table(cohort.caco,file="cohort_caco.csv",sep=",",row.names=F) #csv version for Stata
+
+save(caco,file="caco.RData") #substudy only
+write.table(caco,file="caco.csv",sep=",",row.names=F) #csv version for Stata
+
+# ------------------------------
+# ------------------------------
+# GENERATE NESTED CASE-CONTROL (NCC) DATA
+# ------------------------------
+# ------------------------------
+
+# ---------------------------
+# Generate nested case-control data
+
+ncc=NULL
+no.sample=0
+m=4 #number of controls per case
+for (i in which(cohort$d==1))
+{
+  # Select control(s) for nested case-control
+  possible.controls=which(cohort$t>=cohort$t[i])
+  
+  if (length(possible.controls)>=m){
+    controls=sample(possible.controls,m)
+    ncc=rbind(ncc,cohort[i,])
+    ncc=rbind(ncc,cohort[controls,])
+    no.sample=no.sample+1}
+}
+
+ncc$setno=rep(1:no.sample,each=m+1)
+ncc$case=rep(c(1,rep(0,m)),no.sample)
+
+
+#-----------------------
+#generate indicator of being in the nested case-control substudy
+
+cohort.ncc=cohort
+cohort.ncc$in.ncc<-cohort.ncc$id%in%ncc$id
+
+#-----------------------
+#make x1 missing in those outside the nested case-control sample
+
+cohort.ncc$x1<-ifelse(cohort.ncc$id%in%ncc$id,cohort.ncc$x1,NA)
+
+# ------------------------------
+# save NCC data sets
+
+save(cohort.ncc,file="cohort_ncc.RData") #NCC within full cohort
+write.table(cohort.ncc,file="cohort_ncc.csv",sep=",",row.names=F) #csv version for Stata
+
+save(ncc,file="ncc.RData") #substudy only
+write.table(ncc,file="ncc.csv",sep=",",row.names=F) #csv version for Stata
+
+
