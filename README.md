@@ -18,6 +18,6 @@ The file *generate_data* contains R code to simulate a single full cohort data s
     
 The file *casecohort_analyses.R* illustrates MI analyses using the full-cohort approach, intermediate approach and substudy approach for case-cohort studies using both MI-Approx and MI-SMC.
 
-The file *ncc_analyses.R* illustrates MI analyses using the full-cohort approach, intermediate approach and substudy approach for nested case-control studies using both MI-Approx and MI-SMC. Use of the MI matched set method is also illustrated for the substudy approach.
+The file *nestedcc_analyses.R* illustrates MI analyses using the full-cohort approach, intermediate approach and substudy approach for nested case-control studies using both MI-Approx and MI-SMC. Use of the MI matched set method is also illustrated for the substudy approach.
 
-The corresponding files *casecohort_analyses.do* and *ncc_analyses.do* illustrate how to perform the same methods using Stata, with the exception of the substudy approach using MI-SMC.
+The corresponding files *casecohort_analyses.do* and *nestedcc_analyses.do* illustrate how to perform the same methods using Stata, with the exception of the substudy approach using MI-SMC.
