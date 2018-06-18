@@ -2,9 +2,7 @@
 Multiple imputation (MI) for case-cohort and nested case-control studies
 
 Example code in R and Stata are provided corresponding to the methods described in the paper:
-"Multiple imputation of missing data in nested case-control and case-cohort studies"
-Authors: Ruth Keogh, Shaun Seaman, Jonathan Bartlett, Angela Wood
-The paper is currently under review and is available on request - please contact me by email.
+Keogh RH, Seaman SR, Bartlett JW, Wood AM. Multiple imputation of missing data in nested case-control and case-cohort studies. Biometrics 2018. https://doi.org/10.1111/biom.12910
 
 The file *generate_data* contains R code to simulate a single full cohort data set and case-cohort and nested case-control studies within it. The following data sets are created:
 
